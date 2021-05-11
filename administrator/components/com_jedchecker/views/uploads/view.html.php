@@ -20,6 +20,9 @@ jimport('joomla.application.component.viewlegacy');
  */
 class JedcheckerViewUploads extends JViewLegacy
 {
+	/** @var array */
+	protected $jsOptions;
+
 	/**
 	 * Display method
 	 *
@@ -30,6 +33,9 @@ class JedcheckerViewUploads extends JViewLegacy
 	public function display($tpl = null)
 	{
 		$this->path         = JFactory::getConfig()->get('tmp_path') . '/jed_checker';
+
+		// Load translation for "JED Checker" title from sys.ini file
+		JFactory::getLanguage()->load('com_jedchecker.sys', JPATH_ADMINISTRATOR);
 
 		$this->setToolbar();
 		$this->jsOptions['url'] = JUri::base();
@@ -44,13 +50,33 @@ class JedcheckerViewUploads extends JViewLegacy
 	 */
 	public function getRules()
 	{
-		$rules = array();
-		$files = JFolder::files(JPATH_COMPONENT_ADMINISTRATOR . '/libraries/rules', '\.php$', false, false);
+		$existingRules = array(
+			'xmlinfo',
+			'xmllicense',
+			'xmlmanifest',
+			'xmlfiles',
+			'xmlupdateserver',
+			'gpl',
+			'jexec',
+			'errorreporting',
+			'framework',
+			'encoding',
+			'jamss',
+			'language'
+		);
+
 		JLoader::discover('jedcheckerRules', JPATH_COMPONENT_ADMINISTRATOR . '/libraries/rules/');
 
-		foreach ($files as $file)
+		$rules = array();
+
+		foreach ($existingRules as $rule)
 		{
-			$rules[] = substr($file, 0, -4);
+			$class = 'jedcheckerRules' . ucfirst($rule);
+
+			if (class_exists($class))
+			{
+				$rules[] = $rule;
+			}
 		}
 
 		return $rules;
@@ -68,7 +94,8 @@ class JedcheckerViewUploads extends JViewLegacy
 			JToolbarHelper::custom('check', 'search', 'search', JText::_('COM_JEDCHECKER_TOOLBAR_CHECK'), false);
 		}
 
-		JToolbarHelper::title('JED checker');
+		JToolbarHelper::title(JText::_('COM_JEDCHECKER'));
+
 		if ( file_exists($this->path) )
 		{
 			JToolbarHelper::custom('uploads.clear', 'delete', 'delete', JText::_('COM_JEDCHECKER_TOOLBAR_CLEAR'), false);
